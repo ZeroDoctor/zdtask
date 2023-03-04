@@ -10,11 +10,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/pelletier/go-toml/v2"
+
 	"github.com/go-task/task/v3/internal/filepathext"
 	"github.com/go-task/task/v3/internal/sysinfo"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/taskfile"
-	"github.com/pelletier/go-toml/v2"
 )
 
 type SupportedFileType int
