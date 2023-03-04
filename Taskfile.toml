@@ -1,0 +1,138 @@
+version = "3"
+
+[includes.docs]
+    aliases = ['d']
+    taskfile = './docs'
+    dir = './docs'
+
+[env]
+  CGO_ENABLED = '0'
+
+[tasks.default]
+  cmds = [
+    {task = 'lint'},
+    {task = 'test'}
+  ]
+  
+[tasks.install]
+  desc = 'Installs Task'
+  aliases = ['i']
+  sources = ['./**/*.go']
+  cmds = [
+    { cmd = '''go install -v -ldflags="-w -s -X '{{.VERSION_VAR}}={{.GIT_COMMIT}}'" ./cmd/task''' }
+  ]
+  [tasks.install.vars] 
+    VERSION_VAR = 'github.com/go-task/task/v3/internal/version.version'
+    [tasks.install.vars.GIT_COMMIT]
+      sh = 'git log -n 1 --format=%h'
+
+[tasks.mod]
+ desc = 'Downloads and tidy Go modules'
+ cmds = [
+   { cmd = 'go mod download' },
+   { cmd = 'go mod tidy' }
+ ]
+
+[tasks.clean]
+ desc = 'Cleans temp files and folders'
+ cmds = [
+   { cmd = 'rm -rf dist/' },
+   { cmd = 'rm -rf tmp/' }
+ ]
+
+[tasks.lint]
+ desc = 'Runs golangci-lint'
+ aliases = ['l']
+ sources = [
+   './**/*.go',
+   '.golangci.yml'
+ ]
+ cmds = [
+   { cmd = 'golangci-lint run' }
+ ]
+
+[tasks."sleepit:build"]
+  desc = 'Builds the sleepit test helper'
+  sources = [
+    './cmd/sleepit/**/*.go'
+  ]
+  generates = [
+    './bin/sleepit'
+  ]
+  cmds = [
+    { cmd = 'go build -o ./bin/sleepit{{exeExt}} ./cmd/sleepit' }
+  ]
+
+[tasks."sleepit:run"]
+  desc = 'Builds the sleepit test helper'
+  deps = [
+    { task = 'sleepit:build' }
+  ]
+  cmds = [
+    { cmd = './bin/sleepit {{.CLI_ARGS}}' }
+  ]
+  silent = true
+
+[tasks.test]
+  desc = 'Runs test suite'
+  aliases = ['t']
+  deps = [
+    { task = 'install' }
+  ]
+  [tasks.test.vars.GO_PACKAGES] 
+    sh = 'go list ./...'
+  cmds = [
+    { cmd = 'go test {{catLines .GO_PACKAGES}}' }
+  ]
+
+[tasks."test:all"]
+  desc = 'Runs test suite with signals and watch tests included'
+  deps = [
+    { task = 'install' },
+    { task = 'sleepit:build' }
+  ]
+  cmds = [
+    { cmd = "go test {{catLines .GO_PACKAGES}} -tags 'signals watch'"  }
+  ]
+  [tasks."test:all".vars.GO_PACKAGES]
+    sh = 'go list ./...'
+
+[tasks.test-release]
+  desc = 'Tests release process without publishing'
+  cmds = [
+    { cmd = 'goreleaser --snapshot --rm-dist' }
+  ]
+
+[tasks."docs:changelog"]
+  desc = 'Copy CHANGELOG.md to the documentation website'
+  cmds = [
+    { cmd = 'rm {{.FILE}}' },
+    { cmd = 'echo "---" >> {{.FILE}}' },
+    { cmd = 'echo "slug: /changelog/" >> {{.FILE}}' },
+    { cmd = 'echo "sidebar_position: 7" >> {{.FILE}}' },
+    { cmd = 'echo "---" >> {{.FILE}}' },
+    { cmd = 'echo "" >> {{.FILE}}' },
+    { cmd = 'cat CHANGELOG.md >> {{.FILE}}' }
+  ]
+  [tasks."docs:changelog".vars]
+    FILE = 'docs/docs/changelog.md'
+
+[tasks."npm:publish"]
+  desc = 'Publish release to npm'
+  cmds = [
+    { cmd = 'npm publish --access=public' }
+  ]
+
+[tasks.packages]
+  cmds = [
+    { cmd = '{{.GO_PACKAGES}}' }
+  ]
+  silent = true
+  [tasks.packages.vars.GO_PACKAGES]
+    sh = 'go list ./...'
+
+[tasks.foo]
+  cmds = [
+    { cmd = 'echo "{{.TASK_VERSION}}"' }
+  ]
+  

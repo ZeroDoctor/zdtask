@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -13,6 +14,15 @@ import (
 	"github.com/go-task/task/v3/internal/sysinfo"
 	"github.com/go-task/task/v3/internal/templater"
 	"github.com/go-task/task/v3/taskfile"
+	"github.com/pelletier/go-toml/v2"
+)
+
+type SupportedFileType int
+
+const (
+	YAML SupportedFileType = iota << 1
+	TOML
+	Unsupported
 )
 
 var (
@@ -24,6 +34,11 @@ var (
 		"Taskfile.yaml",
 		"Taskfile.dist.yml",
 		"Taskfile.dist.yaml",
+
+		"Taskfile.tml",
+		"Taskfile.toml",
+		"Taskfile.dist.tml",
+		"Taskfile.dist.toml",
 	}
 )
 
@@ -195,9 +210,18 @@ func readTaskfile(file string) (*taskfile.Taskfile, error) {
 	defer f.Close()
 
 	var t taskfile.Taskfile
+	if checkFileType(file) == TOML {
+		if err := toml.NewDecoder(f).Decode(&t); err != nil {
+			return nil, fmt.Errorf("task: Failed to parse %s:\n%w", filepathext.TryAbsToRel(file), err)
+		}
+
+		return &t, nil
+	}
+
 	if err := yaml.NewDecoder(f).Decode(&t); err != nil {
 		return nil, fmt.Errorf("task: Failed to parse %s:\n%w", filepathext.TryAbsToRel(file), err)
 	}
+
 	return &t, nil
 }
 
@@ -270,4 +294,20 @@ func checkCircularIncludes(node *ReaderNode) error {
 		}
 	}
 	return nil
+}
+
+func checkFileType(filepath string) SupportedFileType {
+	index := strings.LastIndex(filepath, ".")
+	if index == -1 {
+		return Unsupported
+	}
+
+	switch filepath[index:] {
+	case ".yaml", ".yml":
+		return YAML
+	case ".toml", ".tml":
+		return TOML
+	}
+
+	return Unsupported
 }
