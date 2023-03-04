@@ -51,7 +51,7 @@ func (vs *Vars) DeepCopy() *Vars {
 // Merge merges the given Vars into the caller one
 func (vs *Vars) Merge(other *Vars) {
 	if vs == nil {
-		vs = new(Vars)
+		return
 	}
 
 	_ = other.Range(func(key string, value Var) error {

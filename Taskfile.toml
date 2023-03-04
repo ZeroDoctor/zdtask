@@ -21,10 +21,10 @@ version = "3"
   cmds = [
     { cmd = '''go install -v -ldflags="-w -s -X '{{.VERSION_VAR}}={{.GIT_COMMIT}}'" ./cmd/task''' }
   ]
-  [tasks.install.vars] 
-    VERSION_VAR = 'github.com/go-task/task/v3/internal/version.version'
-    [tasks.install.vars.GIT_COMMIT]
-      sh = 'git log -n 1 --format=%h'
+  vars.keys = ['VERSION_VAR', 'GIT_COMMIT']
+  [tasks.install.vars.mapping] 
+    VERSION_VAR.static = 'github.com/go-task/task/v3/internal/version.version'
+    GIT_COMMIT.sh = 'git log -n 1 --format=%h'
 
 [tasks.mod]
  desc = 'Downloads and tidy Go modules'
@@ -79,11 +79,12 @@ version = "3"
   deps = [
     { task = 'install' }
   ]
-  [tasks.test.vars.GO_PACKAGES] 
-    sh = 'go list ./...'
   cmds = [
     { cmd = 'go test {{catLines .GO_PACKAGES}}' }
   ]
+  vars.keys = ['GO_PACKAGES']
+  [tasks.test.vars.mapping] 
+    GO_PACKAGES.sh = 'go list ./...'
 
 [tasks."test:all"]
   desc = 'Runs test suite with signals and watch tests included'
@@ -94,8 +95,9 @@ version = "3"
   cmds = [
     { cmd = "go test {{catLines .GO_PACKAGES}} -tags 'signals watch'"  }
   ]
-  [tasks."test:all".vars.GO_PACKAGES]
-    sh = 'go list ./...'
+  vars.keys = ['GO_PACKAGES']
+  [tasks."test:all".vars.mapping]
+    GO_PACKAGES.sh = 'go list ./...'
 
 [tasks.test-release]
   desc = 'Tests release process without publishing'
@@ -114,8 +116,9 @@ version = "3"
     { cmd = 'echo "" >> {{.FILE}}' },
     { cmd = 'cat CHANGELOG.md >> {{.FILE}}' }
   ]
-  [tasks."docs:changelog".vars]
-    FILE = 'docs/docs/changelog.md'
+  vars.keys = ['FILE']
+  [tasks."docs:changelog".vars.mapping]
+    FILE.static = 'docs/docs/changelog.md'
 
 [tasks."npm:publish"]
   desc = 'Publish release to npm'
@@ -128,8 +131,9 @@ version = "3"
     { cmd = '{{.GO_PACKAGES}}' }
   ]
   silent = true
-  [tasks.packages.vars.GO_PACKAGES]
-    sh = 'go list ./...'
+  vars.keys = ['GO_PACKAGES']
+  [tasks.foo.vars.mapping]
+    GO_PACKAGES.sh = 'go list ./...'
 
 [tasks.foo]
   cmds = [

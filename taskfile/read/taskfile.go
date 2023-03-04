@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/pelletier/go-toml/v2"
+	"github.com/BurntSushi/toml"
 
 	"github.com/go-task/task/v3/internal/filepathext"
 	"github.com/go-task/task/v3/internal/sysinfo"
@@ -212,7 +212,7 @@ func readTaskfile(file string) (*taskfile.Taskfile, error) {
 
 	var t taskfile.Taskfile
 	if checkFileType(file) == TOML {
-		if err := toml.NewDecoder(f).Decode(&t); err != nil {
+		if _, err := toml.NewDecoder(f).Decode(&t); err != nil {
 			return nil, fmt.Errorf("task: Failed to parse %s:\n%w", filepathext.TryAbsToRel(file), err)
 		}
 
