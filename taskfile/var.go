@@ -199,9 +199,8 @@ func (v *Var) FillStruct(m map[string]interface{}) error {
 }
 
 func SetField(obj interface{}, name string, value interface{}) error {
-	exName := name
 	if len(name) > 0 {
-		exName = strings.ToUpper(string(name[0]))
+		exName := strings.ToUpper(string(name[0]))
 		if len(name) > 1 {
 			exName += name[1:]
 		}
