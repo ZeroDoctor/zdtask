@@ -21,7 +21,6 @@ version = "3"
   cmds = [
     { cmd = '''go install -v -ldflags="-w -s -X '{{.VERSION_VAR}}={{.GIT_COMMIT}}'" ./cmd/task''' }
   ]
-  vars.keys = ['VERSION_VAR', 'GIT_COMMIT']
   [tasks.install.vars.mapping] 
     VERSION_VAR.static = 'github.com/go-task/task/v3/internal/version.version'
     GIT_COMMIT.sh = 'git log -n 1 --format=%h'
@@ -82,7 +81,6 @@ version = "3"
   cmds = [
     { cmd = 'go test {{catLines .GO_PACKAGES}}' }
   ]
-  vars.keys = ['GO_PACKAGES']
   [tasks.test.vars.mapping] 
     GO_PACKAGES.sh = 'go list ./...'
 
@@ -95,7 +93,6 @@ version = "3"
   cmds = [
     { cmd = "go test {{catLines .GO_PACKAGES}} -tags 'signals watch'"  }
   ]
-  vars.keys = ['GO_PACKAGES']
   [tasks."test:all".vars.mapping]
     GO_PACKAGES.sh = 'go list ./...'
 
@@ -116,7 +113,6 @@ version = "3"
     { cmd = 'echo "" >> {{.FILE}}' },
     { cmd = 'cat CHANGELOG.md >> {{.FILE}}' }
   ]
-  vars.keys = ['FILE']
   [tasks."docs:changelog".vars.mapping]
     FILE.static = 'docs/docs/changelog.md'
 
@@ -131,12 +127,11 @@ version = "3"
     { cmd = '{{.GO_PACKAGES}}' }
   ]
   silent = true
-  vars.keys = ['GO_PACKAGES']
-  [tasks.foo.vars.mapping]
+  [tasks.packages.vars.mapping]
     GO_PACKAGES.sh = 'go list ./...'
 
 [tasks.foo]
   cmds = [
-    { cmd = 'echo "{{.TASK_VERSION}}"' }
+    { cmd = 'echo "{{.TASK_VERSION}} {{.FOO}} {{.BAR}}"' }
   ]
   

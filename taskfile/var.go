@@ -2,6 +2,8 @@ package taskfile
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
@@ -34,6 +36,46 @@ func (vs *Vars) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	return fmt.Errorf("yaml: line %d: cannot unmarshal %s into variables", node.Line, node.ShortTag())
+}
+
+func (vs *Vars) UnmarshalTOML(inter interface{}) error {
+	interMapping, ok := inter.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("vars is [type=%T] and not [type=map[string]interface{}]", interMapping)
+	}
+
+	if vs.Mapping == nil {
+		vs.Mapping = make(map[string]Var, len(interMapping))
+	}
+
+	for k, inter := range interMapping {
+		var v Var
+		m, ok := inter.(map[string]interface{})
+		if !ok {
+			v.Static = fmt.Sprintf("%+v", inter)
+			vs.Mapping[k] = v
+			continue
+		}
+
+		for k, inter := range m {
+			vs.Keys = append(vs.Keys, k)
+
+			m, ok := inter.(map[string]interface{})
+			if !ok {
+				v.Static = fmt.Sprintf("%+v", inter)
+				vs.Mapping[k] = v
+				continue
+			}
+
+			err := v.FillStruct(m)
+			if err != nil {
+				return fmt.Errorf("[var=%+v] is [type=%T] and not [type=Var] [error=%s]", m, m, err.Error())
+			}
+			vs.Mapping[k] = v
+		}
+	}
+
+	return nil
 }
 
 // DeepCopy creates a new instance of Vars and copies
@@ -144,4 +186,45 @@ func (v *Var) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	return fmt.Errorf("yaml: line %d: cannot unmarshal %s into variable", node.Line, node.ShortTag())
+}
+
+func (v *Var) FillStruct(m map[string]interface{}) error {
+	for k, value := range m {
+		err := SetField(v, k, value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SetField(obj interface{}, name string, value interface{}) error {
+	exName := name
+	if len(name) > 0 {
+		exName = strings.ToUpper(string(name[0]))
+		if len(name) > 1 {
+			exName += name[1:]
+		}
+		name = exName
+	}
+
+	structValue := reflect.ValueOf(obj).Elem()
+	structFieldValue := structValue.FieldByName(name)
+
+	if !structFieldValue.IsValid() {
+		return fmt.Errorf("No such field: %s in obj", name)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("Cannot set %s field value", name)
+	}
+
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	if structFieldType != val.Type() {
+		return fmt.Errorf("Provided value type didn't match object field type")
+	}
+
+	structFieldValue.Set(val)
+	return nil
 }
