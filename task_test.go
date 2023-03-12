@@ -447,36 +447,43 @@ func TestGenerates(t *testing.T) {
 func TestStatusChecksum(t *testing.T) {
 	const dir = "testdata/checksum"
 
-	files := []string{
-		"generated.txt",
-		".task/checksum/build",
+	tests := []struct {
+		files []string
+		task  string
+	}{
+		{[]string{"generated.txt", ".task/checksum/build"}, "build"},
+		{[]string{"generated.txt", ".task/checksum/build-with-status"}, "build-with-status"},
 	}
 
-	for _, f := range files {
-		_ = os.Remove(filepathext.SmartJoin(dir, f))
+	for _, test := range tests {
+		t.Run(test.task, func(t *testing.T) {
+			for _, f := range test.files {
+				_ = os.Remove(filepathext.SmartJoin(dir, f))
 
-		_, err := os.Stat(filepathext.SmartJoin(dir, f))
-		assert.Error(t, err)
+				_, err := os.Stat(filepathext.SmartJoin(dir, f))
+				assert.Error(t, err)
+			}
+
+			var buff bytes.Buffer
+			e := task.Executor{
+				Dir:     dir,
+				TempDir: filepathext.SmartJoin(dir, ".task"),
+				Stdout:  &buff,
+				Stderr:  &buff,
+			}
+			assert.NoError(t, e.Setup())
+
+			assert.NoError(t, e.Run(context.Background(), taskfile.Call{Task: test.task}))
+			for _, f := range test.files {
+				_, err := os.Stat(filepathext.SmartJoin(dir, f))
+				assert.NoError(t, err)
+			}
+
+			buff.Reset()
+			assert.NoError(t, e.Run(context.Background(), taskfile.Call{Task: test.task}))
+			assert.Equal(t, `task: Task "`+test.task+`" is up to date`+"\n", buff.String())
+		})
 	}
-
-	var buff bytes.Buffer
-	e := task.Executor{
-		Dir:     dir,
-		TempDir: filepathext.SmartJoin(dir, ".task"),
-		Stdout:  &buff,
-		Stderr:  &buff,
-	}
-	assert.NoError(t, e.Setup())
-
-	assert.NoError(t, e.Run(context.Background(), taskfile.Call{Task: "build"}))
-	for _, f := range files {
-		_, err := os.Stat(filepathext.SmartJoin(dir, f))
-		assert.NoError(t, err)
-	}
-
-	buff.Reset()
-	assert.NoError(t, e.Run(context.Background(), taskfile.Call{Task: "build"}))
-	assert.Equal(t, `task: Task "build" is up to date`+"\n", buff.String())
 }
 
 func TestAlias(t *testing.T) {
@@ -1568,6 +1575,36 @@ Bye!
 	assert.NoError(t, e.Run(context.Background(), taskfile.Call{Task: "bye"}))
 	t.Log(buff.String())
 	assert.Equal(t, strings.TrimSpace(buff.String()), expectedOutputOrder)
+}
+func TestOutputGroupErrorOnlySwallowsOutputOnSuccess(t *testing.T) {
+	const dir = "testdata/output_group_error_only"
+	var buff bytes.Buffer
+	e := task.Executor{
+		Dir:    dir,
+		Stdout: &buff,
+		Stderr: &buff,
+	}
+	assert.NoError(t, e.Setup())
+
+	assert.NoError(t, e.Run(context.Background(), taskfile.Call{Task: "passing"}))
+	t.Log(buff.String())
+	assert.Empty(t, buff.String())
+}
+
+func TestOutputGroupErrorOnlyShowsOutputOnFailure(t *testing.T) {
+	const dir = "testdata/output_group_error_only"
+	var buff bytes.Buffer
+	e := task.Executor{
+		Dir:    dir,
+		Stdout: &buff,
+		Stderr: &buff,
+	}
+	assert.NoError(t, e.Setup())
+
+	assert.Error(t, e.Run(context.Background(), taskfile.Call{Task: "failing"}))
+	t.Log(buff.String())
+	assert.Contains(t, "failing-output", strings.TrimSpace(buff.String()))
+	assert.NotContains(t, "passing", strings.TrimSpace(buff.String()))
 }
 
 func TestIncludedVars(t *testing.T) {
