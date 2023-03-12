@@ -53,6 +53,7 @@ func (vs *Vars) UnmarshalTOML(inter interface{}) error {
 		m, ok := inter.(map[string]interface{})
 		if !ok {
 			v.Static = fmt.Sprintf("%+v", inter)
+			vs.Keys = append(vs.Keys, k)
 			vs.Mapping[k] = v
 			continue
 		}
