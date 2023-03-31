@@ -1,6 +1,8 @@
 ---
 slug: /api/
 sidebar_position: 4
+toc_min_heading_level: 2
+toc_max_heading_level: 5
 ---
 
 # API Reference
@@ -30,10 +32,11 @@ variable
 | `-f` | `--force` | `bool` | `false` | Forces execution even when the task is up-to-date. |
 | `-g` | `--global` | `bool` | `false` | Runs global Taskfile, from `$HOME/Taskfile.{yml,yaml}`. |
 | `-h` | `--help` | `bool` | `false` | Shows Task usage. |
-| `-i` | `--init` | `bool` | `false` | Creates a new Taskfile.yaml in the current folder. |
+| `-i` | `--init` | `bool` | `false` | Creates a new Taskfile.yml in the current folder. |
 | `-I` | `--interval` | `string` | `5s` | Sets a different watch interval when using `--watch`, the default being 5 seconds. This string should be a valid [Go Duration](https://pkg.go.dev/time#ParseDuration). |
 | `-l` | `--list` | `bool` | `false` | Lists tasks with description of current Taskfile. |
 | `-a` | `--list-all` | `bool` | `false` | Lists tasks with or without a description. |
+|      | `--json` | `bool` | `false` | See [JSON Output](#json-output) |
 | `-o` | `--output` | `string` | Default set in the Taskfile or `intervealed` | Sets output style: [`interleaved`/`group`/`prefixed`]. |
 |      | `--output-group-begin` | `string` | | Message template to print before a task's grouped output. |
 |      | `--output-group-end` | `string` | | Message template to print after a task's grouped output. |
@@ -46,6 +49,30 @@ variable
 | `-v` | `--verbose` | `bool` | `false` | Enables verbose mode. |
 |      | `--version` | `bool` | `false` | Show Task version. |
 | `-w` | `--watch` | `bool` | `false` | Enables watch of the given task. |
+
+## JSON Output
+
+When using the `--json` flag in combination with either the `--list` or `--list-all` flags, the output will be a JSON object with the following structure:
+
+```jsonc
+{
+  "tasks": [
+    {
+      "name": "",
+      "desc": "",
+      "summary": "",
+      "up_to_date": false,
+      "location": {
+        "line": 54,
+        "column": 3,
+        "taskfile": "/path/to/Taskfile.yml"
+      }
+    },
+    // ...
+  ],
+  "location": "/path/to/Taskfile.yml"
+}
+```
 
 ## Special Variables
 
@@ -78,9 +105,7 @@ Some environment variables can be overriden to adjust Task behavior.
 | `TASK_COLOR_RED` | `31` | Color used for red. |
 | `FORCE_COLOR` | | Force color output usage. |
 
-## Schema
-
-### Taskfile
+## Taskfile Schema
 
 | Attribute | Type | Default | Description |
 | - | - | - | - |
@@ -116,6 +141,26 @@ Informing only a string like below is equivalent to setting that value to the `t
 ```yaml
 includes:
   foo: ./path
+```
+
+:::
+
+### Variable
+
+| Attribute | Type | Default | Description |
+| - | - | - | - |
+| *itself* | `string` | | A static value that will be set to the variable. |
+| `sh` | `string` | | A shell command. The output (`STDOUT`) will be assigned to the variable. |
+
+:::info
+
+Static and dynamic variables have different syntaxes, like below:
+
+```yaml
+vars:
+  STATIC: static
+  DYNAMIC:
+    sh: echo "dynamic"
 ```
 
 :::
@@ -168,27 +213,7 @@ tasks:
 
 :::
 
-### Dependency
-
-| Attribute | Type | Default | Description |
-| - | - | - | - |
-| `task` | `string` | | The task to be execute as a dependency. |
-| `vars` | [`map[string]Variable`](#variable) | | Optional additional variables to be passed to this task. |
-
-:::tip
-
-If you don't want to set additional variables, it's enough to declare the
-dependency as a list of strings (they will be assigned to `task`):
-
-```yaml
-tasks:
-  foo:
-    deps: [foo, bar]
-```
-
-:::
-
-### Command
+#### Command
 
 | Attribute | Type | Default | Description |
 | - | - | - | - |
@@ -216,27 +241,27 @@ tasks:
 
 :::
 
-### Variable
+#### Dependency
 
 | Attribute | Type | Default | Description |
 | - | - | - | - |
-| *itself* | `string` | | A static value that will be set to the variable. |
-| `sh` | `string` | | A shell command. The output (`STDOUT`) will be assigned to the variable. |
+| `task` | `string` | | The task to be execute as a dependency. |
+| `vars` | [`map[string]Variable`](#variable) | | Optional additional variables to be passed to this task. |
 
-:::info
+:::tip
 
-Static and dynamic variables have different syntaxes, like below:
+If you don't want to set additional variables, it's enough to declare the
+dependency as a list of strings (they will be assigned to `task`):
 
 ```yaml
-vars:
-  STATIC: static
-  DYNAMIC:
-    sh: echo "dynamic"
+tasks:
+  foo:
+    deps: [foo, bar]
 ```
 
 :::
 
-### Precondition
+#### Precondition
 
 | Attribute | Type | Default | Description |
 | - | - | - | - |

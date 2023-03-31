@@ -691,7 +691,7 @@ func TestStatusVariables(t *testing.T) {
 	assert.NoError(t, e.Setup())
 	assert.NoError(t, e.Run(context.Background(), taskfile.Call{Task: "build"}))
 
-	assert.Contains(t, buff.String(), "d41d8cd98f00b204e9800998ecf8427e")
+	assert.Contains(t, buff.String(), "a41e7948dcd321db412ce61d3d5c9864")
 
 	inf, err := os.Stat(filepathext.SmartJoin(dir, "source.txt"))
 	assert.NoError(t, err)
@@ -704,11 +704,11 @@ func TestStatusVariables(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	const dir = "testdata/init"
-	var file = filepathext.SmartJoin(dir, "Taskfile.yaml")
+	var file = filepathext.SmartJoin(dir, "Taskfile.yml")
 
 	_ = os.Remove(file)
 	if _, err := os.Stat(file); err == nil {
-		t.Errorf("Taskfile.yaml should not exist")
+		t.Errorf("Taskfile.yml should not exist")
 	}
 
 	if err := task.InitTaskfile(io.Discard, dir); err != nil {
@@ -716,7 +716,7 @@ func TestInit(t *testing.T) {
 	}
 
 	if _, err := os.Stat(file); err != nil {
-		t.Errorf("Taskfile.yaml should exist")
+		t.Errorf("Taskfile.yml should exist")
 	}
 	_ = os.Remove(file)
 }
@@ -1831,4 +1831,22 @@ func TestBashShellOptsCommandLevel(t *testing.T) {
 	err := e.Run(context.Background(), taskfile.Call{Task: "globstar"})
 	assert.NoError(t, err)
 	assert.Equal(t, "globstar\ton\n", buff.String())
+}
+
+func TestSplitArgs(t *testing.T) {
+	var buff bytes.Buffer
+	e := task.Executor{
+		Dir:    "testdata/split_args",
+		Stdout: &buff,
+		Stderr: &buff,
+		Silent: true,
+	}
+	assert.NoError(t, e.Setup())
+
+	vars := &taskfile.Vars{}
+	vars.Set("CLI_ARGS", taskfile.Var{Static: "foo bar 'foo bar baz'"})
+
+	err := e.Run(context.Background(), taskfile.Call{Task: "default", Vars: vars})
+	assert.NoError(t, err)
+	assert.Equal(t, "3\n", buff.String())
 }

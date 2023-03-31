@@ -114,6 +114,17 @@ You can also use Node and npm to install Task by installing
 npm install -g @go-task/cli
 ```
 
+### Winget
+
+If you are using Windows and installed the
+[winget](https://github.com/microsoft/winget-cli) package management tool,
+you can install Task from
+[winget-pkgs](https://github.com/microsoft/winget-pkgs).
+
+```bash
+winget install Task.Task
+```
+
 ## Get The Binary
 
 ### Binary
@@ -162,6 +173,9 @@ by the Arduino team:
 ```yaml
 - name: Install Task
   uses: arduino/setup-task@v1
+  with:
+    version: 3.x
+    repo-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 This installation method is community owned.
@@ -187,7 +201,7 @@ env GOBIN=/bin go install github.com/go-task/task/v3/cmd/task@latest
 
 :::tip
 
-For CI environments we recommend using the [install script](#get-the-binary)
+For CI environments we recommend using the [install script](#install-script)
 instead, which is faster and more stable, since it'll just download the latest
 released binary.
 
